@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1f2330"/>
+      <stop offset="1" stop-color="#0d0f14"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f6d58e"/>
+      <stop offset="1" stop-color="#d49a3a"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="240" height="240" rx="56" fill="url(#bg)" stroke="#d49a3a" stroke-width="6"/>
+  <!-- полицейский щит -->
+  <path d="M128 36 L196 62 V124 C196 168 166 200 128 218 C90 200 60 168 60 124 V62 Z" fill="url(#gold)"/>
+  <path d="M128 52 L182 72 V124 C182 160 158 186 128 201 C98 186 74 160 74 124 V72 Z" fill="#141720"/>
+  <!-- весы закона -->
+  <g fill="none" stroke="#e9b95c" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="128" y1="82" x2="128" y2="172"/>
+    <line x1="94" y1="98" x2="162" y2="98"/>
+    <path d="M94 98 L78 136 H110 Z"/>
+    <path d="M162 98 L146 136 H178 Z"/>
+    <line x1="106" y1="174" x2="150" y2="174"/>
+  </g>
+  <circle cx="128" cy="82" r="7" fill="url(#gold)"/>
+</svg>

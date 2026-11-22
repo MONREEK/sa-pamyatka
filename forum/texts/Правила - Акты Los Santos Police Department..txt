@@ -1,0 +1,48 @@
+Акты Los Santos Police Department.
+Источник: https://forum.gta5rp.com/threads/akty-los-santos-police-department.3427072/
+
+В ДАННОМ ОФИЦИАЛЬНОМ РАЗДЕЛЕ СЕТИ ИНТЕРНЕТ ПУБЛИКУЮТСЯ ДОКУМЕНТЫ СОТРУДНИКОВ ПОЛИЦЕЙСКОГО ДЕПАРТАМЕНТА:
+
+{
+				"lightbox_close": "Закрыть",
+				"lightbox_next": "Следующее",
+				"lightbox_previous": "Предыдущее",
+				"lightbox_error": "Запрашиваемое содержимое не может быть загружено. Пожалуйста, попробуйте позже.",
+				"lightbox_start_slideshow": "Начать слайд-шоу",
+				"lightbox_stop_slideshow": "Остановить слайд-шоу",
+				"lightbox_full_screen": "Полный экран",
+				"lightbox_thumbnails": "Миниатюры",
+				"lightbox_download": "Скачать",
+				"lightbox_share": "Поделиться",
+				"lightbox_zoom": "Увеличить",
+				"lightbox_new_window": "Новое окно",
+				"lightbox_toggle_sidebar": "Скрыть боковую панель"
+			}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,627 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; media-src 'self' mediastream: blob:" />
+<title>Помощник SA</title>
+<style>
+  :root { --bg: rgba(14,15,19,.94); --line: #2a2d35; --text: #f3f0e8; --dim: #9a978f; --gold: #e3b766; --good: #4fbf7a; --bad: #e0605a; --warn: #e6a23c; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: transparent; color: var(--text); font: 14px/1.4 "Segoe UI", system-ui, sans-serif; }
+  .shell { height: 100%; background: var(--bg); border: 1px solid var(--line); border-radius: 14px; display: flex; flex-direction: column; overflow: hidden; }
+  header { -webkit-app-region: drag; display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--line); }
+  header b { font-size: 13px; color: var(--gold); }
+  header .grip { flex: 1; text-align: center; color: var(--dim); letter-spacing: 2px; cursor: move; user-select: none; font-size: 12px; }
+  header, header b, header .grip { cursor: move; }
+  header .timer { flex: none; padding: 2px 8px; border-radius: 6px; background: #1d1f26; text-align: center; font: 600 15px Consolas, monospace; -webkit-app-region: no-drag; cursor: pointer; }
+  header .timer.wait { color: var(--gold); } header .timer.late { color: var(--bad); }
+  header button { -webkit-app-region: no-drag; }
+  nav { display: flex; gap: 4px; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+  nav button { flex: 1; }
+  button { background: #1d1f26; color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; cursor: pointer; font: inherit; }
+  button:hover { border-color: var(--gold); }
+  button.on { background: var(--gold); color: #111; border-color: var(--gold); font-weight: 600; }
+  button.small { padding: 3px 7px; font-size: 12px; }
+  button:disabled { opacity: .5; cursor: default; }
+  .ctl { padding: 6px 8px; border-bottom: 1px solid var(--line); display: grid; gap: 4px; }
+  .ctl-row { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+  .ctl-row > b { width: 40px; font-size: 11px; color: var(--dim); font-weight: 600; }
+  .ctl-row > span { display: flex; gap: 4px; flex: 1; flex-wrap: wrap; }
+  .ctl button { padding: 3px 7px; font-size: 12px; }
+  .ctl button.go { font-weight: 600; }
+  .ctl button.act { background: var(--gold); color: #111; border-color: var(--gold); }
+  .ctl button.late { background: var(--bad); color: #fff; border-color: var(--bad); }
+  .ctl-note { font-size: 11px; color: var(--dim); flex: 1; }
+  .ctl-note.warn { color: var(--bad); }
+  main { flex: 1; overflow: auto; padding: 10px; }
+  .tab { display: none; } .tab.on { display: block; }
+  .row { display: flex; gap: 6px; margin: 6px 0; } .row > * { flex: 1; }
+  .hint { color: var(--dim); font-size: 12px; margin: 6px 0; }
+  .chips { display: flex; gap: 4px; margin: 6px 0; } .chips button { flex: 1; padding: 4px; }
+  textarea, input, select { width: 100%; background: #111318; color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 7px 8px; font: inherit; }
+  textarea { min-height: 54px; resize: vertical; }
+  #tab-arts.on { display: flex; flex-direction: column; height: 100%; }
+  #tab-arts #list { flex: 1; min-height: 120px; max-height: none; }
+  #pickedBox { flex: none; }
+  #pickedBox.empty { display: none; }
+  #verdict { max-height: 84px; overflow: auto; font-size: 12px; }
+  #verdict .tip, #verdict .verdict { margin: 4px 0; padding: 4px 8px; }
+  h3 .small { flex: none; }
+  .art2 { border-bottom: 1px solid #1f2128; }
+  .art2 .head { display: flex; align-items: center; gap: 6px; padding: 6px; cursor: pointer; }
+  .art2 .head:hover { background: #1b1d24; }
+  .art2 .num { flex: none; font: 700 12px Consolas, monospace; color: var(--gold); min-width: 58px; }
+  .art2 .ttl { flex: 1; font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .art2 .ps { flex: none; font-size: 11px; max-width: 150px; text-align: right; display: flex; gap: 3px; flex-wrap: wrap; justify-content: flex-end; }
+  .pj, .pk, .pf, .pl { display: inline-block; border-radius: 5px; padding: 0 5px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .pj { background: #3a1716; color: #ff8a80; }
+  .pk { background: #3a2f12; color: #ffcf5c; }
+  .pf { background: #15301f; color: #7ee2a0; }
+  .pl { background: #262833; color: var(--dim); }
+  .verdict .pj, .verdict .pk, .verdict .pf { font-size: 12px; padding: 1px 6px; }
+  .art2 .add { flex: none; width: 24px; height: 24px; padding: 0; border-radius: 6px; font-weight: 700; }
+  .art2 .add.on { background: var(--good); border-color: var(--good); color: #111; }
+  .art2.picked { background: #1c2119; }
+  .art2 .body { padding: 2px 10px 8px 34px; font-size: 13px; white-space: pre-wrap; }
+  .art2 .pen { margin-top: 6px; color: var(--gold); } .art2 .pen b { color: var(--text); }
+  .art2 .note { margin-top: 6px; font-size: 11px; color: var(--dim); }
+  .art2 .ftitle { font-weight: 700; margin-bottom: 4px; }
+  .basket2 { display: flex; flex-wrap: wrap; gap: 4px; max-height: 64px; overflow: auto; margin-bottom: 4px; }
+  .bk { display: flex; align-items: center; gap: 4px; background: #1d1f26; border: 1px solid var(--line); border-radius: 8px; padding: 2px 4px 2px 8px; font-size: 12px; }
+  .bk b { color: var(--gold); } .bk .x { padding: 0 4px; border: 0; background: none; color: var(--dim); }
+  #copyLine { font-size: 12px; padding: 5px 8px; cursor: pointer; margin-bottom: 4px; }
+  .list { max-height: 210px; overflow: auto; border: 1px solid var(--line); border-radius: 10px; }
+  .art { display: flex; gap: 8px; padding: 6px 8px; border-bottom: 1px solid #1f2128; cursor: pointer; align-items: flex-start; }
+  .art:last-child { border-bottom: 0; } .art:hover { background: #1b1d24; }
+  .art .n { flex: none; min-width: 66px; font: 600 12px Consolas, monospace; color: var(--gold); padding-top: 1px; }
+  .art .t { flex: 1; font-size: 13px; }
+  .art .p { display: block; color: var(--dim); font-size: 12px; }
+  .star { flex: none; padding: 0 5px; background: none; border: 0; color: var(--dim); font-size: 15px; line-height: 1.2; }
+  .star.on { color: var(--gold); background: none; }
+  .art.picked { background: #22261f; } .art.picked .n::before { content: "✓ "; color: var(--good); }
+  .tag { display: inline-block; font-size: 10px; padding: 0 5px; border-radius: 6px; border: 1px solid var(--line); color: var(--dim); margin-left: 4px; vertical-align: 1px; }
+  .tag.fed { color: #9cc2ff; background: #16233d; border-color: #2f4a7a; font-weight: 700; }
+  .tag.reg { color: #d4a6ff; background: #2a1a3d; border-color: #5a3a80; font-weight: 700; }
+  .art2 .head .tag { margin-left: 0; flex: none; }
+  .chips button.fedc.on { background: #2f4a7a; border-color: #2f4a7a; color: #fff; }
+  .chips button.regc.on { background: #5a3a80; border-color: #5a3a80; color: #fff; }
+  h3 { font-size: 13px; color: var(--gold); margin: 12px 0 6px; display: flex; align-items: center; gap: 8px; } h3 span { flex: 1; }
+  .basket .art { cursor: default; } .basket .x { flex: none; }
+  .verdict { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; margin-top: 8px; }
+  .verdict b { color: var(--gold); }
+  .tip { border-left: 3px solid var(--warn); background: #241f15; padding: 6px 8px; border-radius: 6px; margin: 6px 0; font-size: 13px; }
+  .tip.red { border-color: var(--bad); background: #2a1716; }
+  .tip.blue { border-color: #6c9cff; background: #161d2a; }
+  .card { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; margin-bottom: 8px; }
+  .card h4 { margin: 0 0 4px; font-size: 13px; color: var(--gold); }
+  .card p { margin: 0 0 6px; white-space: pre-wrap; }
+  .aictx { font-size: 12px; color: var(--dim); border: 1px dashed var(--line); border-radius: 8px; padding: 5px 8px; margin-bottom: 8px; }
+  .aictx.on { color: var(--text); border: 1px solid #3a4a2c; background: #1a2116; }
+  .aictx b { color: var(--gold); }
+  .chat { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+  .msg { white-space: pre-wrap; border-radius: 10px; padding: 8px 10px; }
+  .msg.me { background: #2b2618; align-self: flex-end; max-width: 90%; }
+  .msg.ai { background: #181a20; border: 1px solid var(--line); }
+  .msg.err { border-color: var(--bad); color: #ffb3ae; }
+  .msg .acts { margin-top: 6px; display: flex; gap: 6px; }
+  .toast { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); background: var(--good); color: #111; padding: 4px 12px; border-radius: 20px; font-size: 12px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  .toast.on { opacity: 1; }
+  kbd { background: #24262e; border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; font-size: 11px; }
+  label { display: block; margin: 8px 0 4px; color: var(--dim); font-size: 12px; }
+  .check { display: flex; gap: 6px; align-items: center; color: var(--dim); font-size: 12px; margin: 6px 0; } .check input { width: auto; }
+</style>
+</head>
+<body>
+<div class="shell" id="shell">
+  <header>
+    <b>⚖ SA</b>
+    <span class="grip" title="Тяни, чтобы двигать окно">⠿⠿⠿</span>
+    <div class="timer" id="timer" title="Alt+1 — час задержания, Alt+2 — адвокат, Alt+3 — прокурор">⏱ Alt+1</div>
+    <button class="small" data-tab="set" title="Настройки">⚙</button>
+    <button class="small" id="hide" title="Скрыть (Alt+H)">—</button>
+    <button class="small" id="quit" title="Закрыть">✕</button>
+  </header>
+  <div class="ctl" id="ctl">
+    <div class="ctl-row"><button class="go" id="cGo">▶ Задержал</button><span class="ctl-note" id="cNote"></span></div>
+    <div class="ctl-row"><b>Адв.</b><span id="cLaw"></span></div>
+    <div class="ctl-row"><b>Прок.</b><span id="cPros"></span></div>
+    <div class="ctl-row"><b>Пауза</b><span id="cOther"></span></div>
+  </div>
+  <nav>
+    <button data-tab="arts" class="on">Статьи</button>
+    <button data-tab="lawyer">Адвокат</button>
+    <button data-tab="ai">ИИ</button>
+  </nav>
+  <main>
+    <!-- СТАТЬИ -->
+    <section class="tab on" id="tab-arts">
+      <input id="search" placeholder="Текст... (Enter — ИИ)" />
+      <div class="chips" id="chips"></div>
+      <div class="list" id="list"></div>
+
+      <div id="pickedBox" class="empty">
+        <h3><span>Вменяю</span>
+          <label class="check" style="margin:0" title="Госслужащий / неприкосновенный"><input type="checkbox" id="gov" />Госсл.</label>
+          <button class="small" id="bCheck" title="Проверить ИИ: лазейки и ошибки">🤖</button>
+          <button class="small" id="bCopyArts" title="Копировать статьи">📋</button>
+          <button class="small" id="clear" title="Очистить">✕</button>
+        </h3>
+        <div class="basket2" id="basket"></div>
+        <input id="copyLine" readonly title="Клик — скопировать" />
+        <div id="verdict"></div>
+      </div>
+    </section>
+
+    <!-- АДВОКАТ -->
+    <section class="tab" id="tab-lawyer">
+      <div class="row"><button id="bMiranda">📋 Миранда</button></div>
+      <p class="hint">Клик — скопировано. Замени ___ на своё.</p>
+      <div id="answers"></div>
+    </section>
+
+    <!-- ИИ -->
+    <section class="tab" id="tab-ai">
+      <p class="hint"><kbd>Esc</kbd> — в игру · <kbd>Win+H</kbd> — голосом</p>
+      <div class="aictx" id="aiCtx"></div>
+      <div class="chat" id="chat"></div>
+      <textarea id="q" placeholder="Текст..."></textarea>
+      <div class="row">
+        <button id="bAsk">Отправить <kbd>Enter</kbd></button>
+        <button id="bNew" style="flex:0 0 auto">Новый разговор</button>
+      </div>
+      <label class="check"><input type="checkbox" id="speak" /> 🔊 Озвучивать ответы голосом</label>
+    </section>
+
+    <!-- НАСТРОЙКИ -->
+    <section class="tab" id="tab-set">
+      <label>API-ключ Anthropic (console.anthropic.com → API Keys)</label>
+      <input id="key" type="password" placeholder="sk-ant-..." />
+      <p class="hint" id="keyState"></p>
+      <label>Модель</label>
+      <select id="model">
+        <option value="claude-haiku-5-5">Haiku 5.5 — дёшево, ~1–2 ¢ за вопрос (рекомендую)</option>
+        <option value="claude-sonnet-5-5">Sonnet 5.5 — умнее, в ~20 раз дороже</option>
+        <option value="claude-opus-5-5">Opus 5.5 — самый умный и дорогой (~$1 в час)</option>
+      </select>
+      <label>Прозрачность окна</label>
+      <input id="opacity" type="range" min="0.4" max="1" step="0.02" />
+      <div class="row"><button id="bSave">Сохранить</button></div>
+      <p class="hint">Alt+1 час задержания · Alt+2 адвокат · Alt+3 прокурор · Alt+S статьи · Alt+Q ИИ · Alt+H скрыть.<br>Игру запускай в режиме «Оконный без рамки».</p>
+    </section>
+  </main>
+</div>
+<div class="toast" id="toast">Скопировано</div>
+
+<script src="articles.js"></script>
+<script src="search.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const toast = (msg = "Скопировано") => { const t = $("toast"); t.textContent = msg; t.classList.add("on"); setTimeout(() => t.classList.remove("on"), 1200); };
+const copy = async (text) => { await window.sa.copy(text); toast(); };
+
+/* ---------- вкладки ---------- */
+function showTab(name) {
+  document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("on", t.id === "tab-" + name));
+  document.querySelectorAll("nav button").forEach((b) => b.classList.toggle("on", b.dataset.tab === name));
+  if (name === "ai") setTimeout(() => $("q").focus(), 30);
+  if (name === "arts") setTimeout(() => $("search").focus(), 30);
+}
+document.querySelectorAll("[data-tab]").forEach((b) => b.addEventListener("click", () => showTab(b.dataset.tab)));
+
+/* ---------- задержание: час и паузы (ст. 20 ч. 2 ПК) ---------- */
+const HOUR = 3600;
+// этапы: [подпись кнопки, лимит сек или 0 = без лимита, что делать по истечении]
+const FLOWS = {
+  law: [
+    ["Вызван", 300, "Адвокат не ответил 5 мин — право реализовано, продолжай"],
+    ["Едет", 600, "Адвокат не приехал за 10 мин — право реализовано, продолжай"],
+    ["Приехал", 0, ""],
+    ["Наедине", 600, "Беседа больше 10 мин — заканчивай (ст. 22 «д» ПК)"]
+  ],
+  pros: [
+    ["Вызван", 900, "Прокурор не ответил 15 мин — отпустить, обращение в ОГП (ст. 19)"],
+    ["Едет", 600, "Прокурор не приехал за 10 мин — отпустить, обращение в ОГП"],
+    ["Приехал", 0, ""]
+  ]
+};
+const OTHER = [["Допрос", 0], ["Обыск имущ.", 0], ["Видео боло", 600]];
+const T = { running: false, left: HOUR, law: null, pros: null, other: null }; // law/pros: {stage, t}; other: {i, t}
+
+const fmt = (s) => { const a = Math.abs(s); return (s < 0 ? "-" : "") + String(Math.floor(a / 60)).padStart(2, "0") + ":" + String(a % 60).padStart(2, "0"); };
+const paused = () => Boolean(T.law || T.pros || T.other);
+
+function startIfNeeded() { if (!T.running) { T.running = true; T.left = HOUR; } }
+function setStage(who, stage) {
+  startIfNeeded();
+  T[who] = T[who] && T[who].stage === stage ? null : { stage, t: 0 };
+  renderTimer();
+}
+function nextStage(who) {
+  startIfNeeded();
+  const flow = FLOWS[who];
+  if (!T[who]) T[who] = { stage: 0, t: 0 };
+  else if (T[who].stage < flow.length - 1) T[who] = { stage: T[who].stage + 1, t: 0 };
+  else T[who] = null;
+  renderTimer();
+}
+function toggleTimer() {
+  if (T.running) Object.assign(T, { running: false, left: HOUR, law: null, pros: null, other: null });
+  else startIfNeeded();
+  renderTimer();
+}
+
+function stageButtons(who) {
+  const cur = T[who];
+  const btns = FLOWS[who].map(([label, limit], i) => {
+    const on = cur && cur.stage === i;
+    const late = on && limit && cur.t >= limit;
+    const time = on ? " " + (limit ? fmt(limit - cur.t) : fmt(cur.t)) : "";
+    return `<button class="${on ? (late ? "late" : "act") : ""}" data-flow="${who}" data-st="${i}">${label}${time}</button>`;
+  });
+  btns.push(`<button data-flow="${who}" data-st="end" title="Закончили — час идёт дальше">Конец</button>`);
+  return btns.join("");
+}
+function renderTimer() {
+  const t = $("timer");
+  if (!T.running) { t.textContent = "⏱ Alt+1"; t.className = "timer"; }
+  else {
+    t.textContent = `${paused() ? "⏸" : "⏱"} ${fmt(T.left)}`;
+    t.className = "timer" + (paused() ? " wait" : "") + (T.left <= 300 ? " late" : "");
+  }
+  $("cGo").textContent = T.running ? "■ Сброс" : "▶ Задержал";
+  $("cLaw").innerHTML = stageButtons("law");
+  $("cPros").innerHTML = stageButtons("pros");
+  $("cOther").innerHTML = OTHER.map(([label, limit], i) => {
+    const on = T.other && T.other.i === i;
+    const late = on && limit && T.other.t >= limit;
+    return `<button class="${on ? (late ? "late" : "act") : ""}" data-other="${i}">${label}${on ? " " + (limit ? fmt(limit - T.other.t) : fmt(T.other.t)) : ""}</button>`;
+  }).join("");
+  // подсказка
+  let note = "", warn = false;
+  for (const who of ["law", "pros"]) {
+    const cur = T[who]; if (!cur) continue;
+    const [, limit, msg] = FLOWS[who][cur.stage];
+    if (limit && cur.t >= limit) { note = msg; warn = true; }
+  }
+  if (!note && T.running && T.left <= 0) { note = "Час вышел: отпустить или избрать меру (ст. 20 ПК)"; warn = true; }
+  if (!note && T.running) note = paused() ? "Час на паузе (ст. 20 ч. 2 ПК)" : "Идёт час задержания";
+  if (!note) note = "Прокурор — только если госслужащий";
+  $("cNote").textContent = note;
+  $("cNote").className = "ctl-note" + (warn ? " warn" : "");
+}
+$("ctl").addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.id === "cGo") return toggleTimer();
+  if (b.dataset.flow) {
+    const who = b.dataset.flow;
+    if (b.dataset.st === "end") { T[who] = null; renderTimer(); return; }
+    return setStage(who, Number(b.dataset.st));
+  }
+  if (b.dataset.other) {
+    startIfNeeded();
+    const i = Number(b.dataset.other);
+    T.other = T.other && T.other.i === i ? null : { i, t: 0 };
+    renderTimer();
+  }
+});
+setInterval(() => {
+  if (!T.running) return;
+  if (paused()) { ["law", "pros"].forEach((w) => T[w] && (T[w].t += 1)); if (T.other) T.other.t += 1; }
+  else T.left -= 1;
+  renderTimer();
+}, 1000);
+$("timer").onclick = toggleTimer;
+
+/* ---------- база статей: УК, АК, ДК с форума (build-articles.js) ---------- */
+const CODES = ["ak", "dk", "uk"];
+const SHORT = { ak: "АК", dk: "ДК", uk: "УК" };
+const ARTS = (window.SA_ARTS || []).map((a) => ({ ...a, block: a.title }));
+
+let filterCode = "all";
+let favOnly = false;
+let scope = "";
+let fav = new Set();
+// избранное хранится в файле favorites.json (через main), старое из браузерной памяти переносим один раз
+const saveFav = () => window.sa.setFav([...fav]);
+window.sa.getFav().then((saved) => {
+  if (Array.isArray(saved)) fav = new Set(saved);
+  else {
+    try { fav = new Set(JSON.parse(localStorage.getItem("sa-fav") || "[]")); } catch {}
+    saveFav();
+  }
+  renderChips(); renderList();
+});
+const picked = new Map();
+function renderChips() {
+  $("chips").innerHTML = `<button data-fav="1" class="${favOnly ? "on" : ""}" title="Только избранное">★ ${fav.size}</button>` +
+    [["all", "Все"], ...CODES.map((c) => [c, SHORT[c]])].map(([id, t]) => `<button data-code="${id}" class="${filterCode === id ? "on" : ""}">${t}</button>`).join("") +
+    `<button data-scope="fed" class="fedc${scope === "fed" ? " on" : ""}" title="Только федеральные">ФЕД</button><button data-scope="reg" class="regc${scope === "reg" ? " on" : ""}" title="Только региональные">РЕГ</button>`;
+}
+$("chips").addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.fav) favOnly = !favOnly;
+  else if (b.dataset.scope) scope = scope === b.dataset.scope ? "" : b.dataset.scope;
+  else filterCode = b.dataset.code;
+  renderChips(); renderList();
+});
+renderChips();
+
+function tags(a) { return (a.fed ? '<span class="tag fed">ФЕД</span>' : "") + (a.reg ? '<span class="tag reg">РЕГ</span>' : ""); }
+
+/* короткое наказание: «8–12 лет», «3–10к $ / 15 сут» */
+const money = (str) => [...str.matchAll(/(\d{1,3}(?:[.,\s]\d{3})+|\d{4,})/g)].map((m) => +m[1].replace(/[.,\s]/g, ""));
+const k = (n) => (n >= 1000 ? (n % 1000 ? (n / 1000).toFixed(1) : n / 1000) + "к" : String(n));
+function penParts(pen) {
+  const p = String(pen || "");
+  const r = { years: null, fine: null, days: null, lic: /лишени\S* лицензи/i.test(p) };
+  const upto = p.match(/до\s*(\d+)\s*(?:лет|года?)/i);
+  const m = p.match(/(?:от\s*)?(\d+)\s*(?:до\s*(\d+)\s*)?(?:лет|года?)(?![а-я])/i);
+  if (upto && !(m && m[2])) r.years = [0, +upto[1]]; else if (m) r.years = [+m[1], +(m[2] || m[1])];
+  const finePart = p.split(/\s(?:или|либо)\s/i).find((x) => /\$|штраф/i.test(x)) || "";
+  const nums = money(finePart);
+  if (nums.length) r.fine = nums.length === 1 ? (/до\s*\$?\s*\d/i.test(finePart) ? [0, nums[0]] : [nums[0], nums[0]]) : [nums[0], nums[nums.length - 1]];
+  const dUp = p.match(/до\s*(\d+)\s*сут/i);
+  const d = p.match(/(?:от\s*)?(\d+)\s*(?:до\s*(\d+)\s*)?сут/i);
+  if (dUp && !(d && d[2])) r.days = [0, +dUp[1]]; else if (d) r.days = [+d[1], +(d[2] || d[1])];
+  return r;
+}
+const rng = (x, unit) => (!x ? "" : x[0] === x[1] ? x[1] + unit : x[0] ? x[0] + "–" + x[1] + unit : "до " + x[1] + unit);
+const rngK = (x) => (!x ? "" : x[0] === x[1] ? k(x[1]) + " $" : x[0] ? k(x[0]) + "–" + k(x[1]) + " $" : "до " + k(x[1]) + " $");
+function shortPen(pen) {
+  const r = penParts(pen);
+  const out = [];
+  if (r.years) out.push(rng(r.years, " лет"));
+  if (r.fine) out.push(rngK(r.fine));
+  if (r.days) out.push(rng(r.days, " сут"));
+  if (r.lic) out.push("лиш. лиц.");
+  return out.join(" / ") || String(pen || "").slice(0, 40);
+}
+
+function penHtml(pen) {
+  const r = penParts(pen);
+  const out = [];
+  if (r.years) out.push('<span class="pj">⛓ ' + rng(r.years, " лет") + "</span>");
+  if (r.days) out.push('<span class="pk">КПЗ ' + rng(r.days, " сут") + "</span>");
+  if (r.fine) out.push('<span class="pf">' + rngK(r.fine) + "</span>");
+  if (r.lic) out.push('<span class="pl">лиш. лиц.</span>');
+  return out.join(" ") || esc(String(pen || "").slice(0, 40));
+}
+
+const openIds = new Set();
+function artRow(a) {
+  const on = picked.has(a.id), open = openIds.has(a.id);
+  return '<div class="art2' + (on ? " picked" : "") + '" data-id="' + a.id + '">' +
+    '<div class="head">' +
+      '<button class="star' + (fav.has(a.id) ? " on" : "") + '" data-star="' + a.id + '" title="В избранное">' + (fav.has(a.id) ? "★" : "☆") + "</button>" +
+      '<b class="num">' + SHORT[a.code] + " " + esc(a.key) + "</b>" +
+      '<span class="ttl" title="' + esc(a.title) + '">' + esc(a.short || a.title) + "</span>" + tags(a) +
+      '<span class="ps">' + penHtml(a.pen) + "</span>" +
+      '<button class="add' + (on ? " on" : "") + '" data-add="' + a.id + '" title="' + (on ? "Убрать" : "Вменить") + '">' + (on ? "✓" : "+") + "</button>" +
+    "</div>" +
+    (open ? '<div class="body"><div class="ftitle">' + esc(a.title) + "</div>" + (a.full && a.full !== a.title ? esc(a.full) : "") + '<div class="pen"><b>Наказание:</b> ' + esc(a.pen) + "</div>" + (a.note ? '<div class="note">' + esc(a.note) + "</div>" : "") + "</div>" : "") +
+  "</div>";
+}
+function renderList() {
+  const q = $("search").value.trim().toLowerCase();
+  const base = ARTS.filter((a) => (!favOnly || fav.has(a.id)) && (!scope || a[scope]) && (filterCode === "all" || a.code === filterCode));
+  let rows;
+  if (aiIds && aiQuery === q) rows = aiIds.map((id) => base.find((a) => a.id === id)).filter(Boolean);
+  else { aiIds = null; rows = q ? window.smartSearch(base, q) : base; }
+  $("list").innerHTML = rows.length ? rows.map(artRow).join("") : '<div class="hint" style="padding:8px">' + (favOnly ? "Пусто. Жми ☆ у статьи." : "Не нашёл. Жми Enter — подберёт ИИ.") + "</div>";
+}
+let aiIds = null, aiQuery = "";
+$("search").addEventListener("input", renderList);
+// Enter — подобрать статьи ИИ по описанию ситуации
+$("search").addEventListener("keydown", async (e) => {
+  if (e.key !== "Enter") return;
+  const q = $("search").value.trim().toLowerCase();
+  if (!q) return;
+  $("list").innerHTML = '<div class="hint" style="padding:8px">🤖 Подбираю статьи…</div>';
+  const res = await window.sa.search(q, ARTS.map((a) => ({ id: a.id, title: SHORT[a.code] + " " + a.key + " " + a.title })));
+  if (res.error) { toast(res.error); renderList(); return; }
+  aiIds = res.ids; aiQuery = q;
+  renderList();
+  toast("🤖 Подобрал: " + res.ids.length);
+});
+$("list").addEventListener("click", (e) => {
+  const star = e.target.closest("[data-star]");
+  if (star) { const id = star.dataset.star; if (fav.has(id)) fav.delete(id); else fav.add(id); saveFav(); renderChips(); renderList(); return; }
+  const add = e.target.closest("[data-add]");
+  if (add) { const x = ARTS.find((y) => y.id === add.dataset.add); if (picked.has(x.id)) picked.delete(x.id); else picked.set(x.id, x); renderList(); renderBasket(); return; }
+  const row = e.target.closest(".art2"); if (!row) return;
+  const id = row.dataset.id; if (openIds.has(id)) openIds.delete(id); else openIds.add(id);
+  renderList();
+});
+$("basket").addEventListener("click", (e) => { const b = e.target.closest("[data-del]"); if (!b) return; picked.delete(b.dataset.del); renderList(); renderBasket(); });
+$("clear").onclick = () => { picked.clear(); renderList(); renderBasket(); };
+$("gov").onchange = () => renderBasket();
+
+/* ---------- подсказки: одна строка каждая ---------- */
+function has(code, base) { return [...picked.values()].some((a) => a.code === code && a.base === base); }
+function partsOf(code, base) { return ARTS.filter((a) => a.code === code && a.base === base); }
+function tipsFor(list) {
+  const tips = [];
+  const ak = list.filter((a) => a.code === "ak"), uk = list.filter((a) => a.code === "uk");
+  const add = (cls, t) => tips.push('<div class="tip ' + cls + '">' + t + "</div>");
+  if (ak.length >= 3) add("red", "3+ АК одним действием → <b>17.4 УК</b>");
+  else if (ak.length === 2) add("", "Ещё 1 АК за то же действие → 17.4 УК");
+  if (ak.length && uk.length) add("", "АК и УК за одно действие — нельзя, оставь УК");
+  if (has("ak", "36")) add("", "Угон АК 36 ↔ УК 10.5 (3–4 года)");
+  if (has("ak", "44")) add("", "Наркотики: больше 5 г лёгких → УК 13.1, больше 25 г / сбыт → 13.3");
+  if (has("uk", "13.1")) add("", "Сбыт или больше 25 г → 13.3; меньше порога → АК 44");
+  if (has("uk", "10.1")) add("", "Кража: от 5к ч.1, от 10к ч.2, от 20к ч.3. Открыто → 10.4, с насилием → 10.6");
+  if (has("uk", "10.4")) add("", "Грабёж с опасным насилием → разбой 10.6");
+  if (has("ak", "55")) add("", "Было насилие к сотруднику → УК 17.2 вместо АК 55");
+  if (has("uk", "17.2")) add("", "Покушение на жизнь → 17.1 (8–12 лет)");
+  if (has("uk", "17.1")) add("blue", "17.1 усечённый: вред не нужен. Держи видео");
+  if (has("ak", "28") || has("dk", "12")) add("", "Угроза жизни при езде → АК 28, иначе ДК 12");
+  if (has("ak", "45")) add("", "Есть вред здоровью → УК 6.6 / 6.3");
+  if (has("ak", "24")) add("", "Нет лицензии на оружие → УК 12.8");
+  list.forEach((a) => {
+    if (!/ч\.\s*1$/.test(a.key)) return;
+    const r = partsOf(a.code, a.base).find((p) => /повторн/i.test(p.full || p.text) && !picked.has(p.id));
+    if (r) add("", "Повторно → " + SHORT[a.code] + " " + esc(r.key) + " (" + esc(shortPen(r.pen)) + ")");
+  });
+  if (uk.length >= 2) add("blue", "Несколько УК: строгое поглощает (5.11 УК)");
+  if ($("gov").checked) add("red", "Госслужащий: руководство + ОГП (ст. 19 ПК)");
+  return tips.join("");
+}
+
+function totalsFor(list) {
+  if (!list.length) return "";
+  const uk = list.filter((a) => a.code === "uk");
+  const rest = list.filter((a) => a.code !== "uk");
+  const lines = [];
+  if (uk.length) {
+    const ys = uk.map((a) => penParts(a.pen).years).filter(Boolean);
+    const max = ys.length ? ys.reduce((m, y) => (y[1] > m[1] ? y : m)) : null;
+    const fed = uk.some((a) => a.fed && !a.reg), reg = uk.every((a) => a.reg && !a.fed);
+    const where = fed ? "фед. тюрьма" : reg ? "Bolingbroke" : "Bolingbroke / фед. (по тяжкой)";
+    lines.push('<span class="pj">⛓ Тюрьма ' + (max ? rng(max, " лет") : "см. статьи") + "</span>" + (uk.length > 1 ? " (по самой тяжкой)" : "") + " · " + where);
+  }
+  if (rest.length) {
+    const f = [0, 0], d = [0, 0];
+    let anyF = false, anyD = false;
+    rest.forEach((a) => { const r = penParts(a.pen); if (r.fine) { f[0] += r.fine[0]; f[1] += r.fine[1]; anyF = true; } if (r.days) { d[0] += r.days[0]; d[1] += r.days[1]; anyD = true; } });
+    const parts = [];
+    if (anyF) parts.push('<span class="pf">Штраф ' + rngK(f) + "</span>");
+    if (anyD) parts.push('<span class="pk">КПЗ ' + rng([Math.min(d[0], 40), Math.min(d[1], 40)], " сут") + "</span>");
+    if (parts.length) lines.push(parts.join(" или "));
+  }
+  return '<div class="verdict">' + lines.join("<br>") + "</div>";
+}
+
+function copyLine() { return "Вменяется: " + [...picked.values()].map((a) => "ст. " + a.key + " " + SHORT[a.code]).join(", "); }
+function renderBasket() {
+  const list = [...picked.values()];
+  // во вкладке ИИ видно, за что задерживаем — эти статьи уходят ИИ с каждым вопросом
+  $("aiCtx").innerHTML = list.length
+    ? "🚔 Задерживаю: " + list.map((a) => "<b>" + SHORT[a.code] + " " + esc(a.key) + "</b> " + esc(a.short || a.title)).join(" · ")
+    : "Статьи не выбраны — отметь «+» во вкладке «Статьи», и ИИ будет знать, за что задержание.";
+  $("aiCtx").classList.toggle("on", list.length > 0);
+  $("pickedBox").classList.toggle("empty", !list.length);
+  $("basket").innerHTML = list.map((a) => '<div class="bk"><b>' + SHORT[a.code] + " " + esc(a.key) + "</b> " + penHtml(a.pen) + '<button class="x" data-del="' + a.id + '">✕</button></div>').join("");
+  $("copyLine").value = list.length ? copyLine() : "";
+  $("verdict").innerHTML = totalsFor(list) + tipsFor(list);
+}
+function artsText() {
+  return [...picked.values()].map((a) => SHORT[a.code] + " ст. " + a.key + " — " + (a.short || a.title) + (a.pen ? " (" + a.pen + ")" : "")).join("\n");
+}
+$("bCopyArts").onclick = () => picked.size && copy(copyLine());
+$("copyLine").onclick = () => picked.size && copy(copyLine());
+$("bCheck").onclick = () => {
+  if (!picked.size) return toast("Сначала выбери статьи");
+  showTab("ai");
+  send(`Я задержал человека и хочу вменить:\n${artsText()}${$("gov").checked ? "\nЗадержанный — госслужащий." : ""}\n\nПроверь квалификацию: правильные ли статьи и части, нет ли двойного вменения, не превращаются ли АК в УК, что я мог упустить, какие лазейки найдёт адвокат и как ему ответить. Коротко, по пунктам.`);
+};
+renderList(); renderBasket();
+
+/* ---------- готовые ответы адвокату ---------- */
+const MIRANDA = "Вы имеете право хранить молчание. Всё, что вы скажете, может и будет использовано против Вас в суде. Вы имеете право на один телефонный звонок. Также Вы имеете право на адвоката. Если вам необходим адвокат, он будет для Вас запрошен. Вы понимаете свои права?";
+$("bMiranda").onclick = () => copy(MIRANDA);
+const ANSWERS = [
+  ["«Назовите состав преступления»", "Гражданину вменяется ст. ___ УК СА. Объект — ___. Объективная сторона: в ___ у ___ гражданин ___, что подтверждается записью бодикамеры. Субъект — вменяемое совершеннолетнее лицо. Субъективная сторона — прямой умысел."],
+  ["«Какие следственные действия проведены?»", "Проведены: видеофиксация на бодикамеру (запись сохранена), задержание с разъяснением прав, личный обыск с изъятием ___, осмотр места происшествия, проверка личности и розыска по базе, опрос ___."],
+  ["«На какие НПА вы ссылались?»", "Конституция штата Сан-Андреас, Уголовный кодекс (ст. ___), Процессуальный кодекс (порядок задержания и права задержанного), Закон «О Полицейском Департаменте», Внутренний устав LSPD."],
+  ["«Вызовите прокурора»", "Обязанность вызова Офиса Генерального прокурора установлена ст. 19 ПК СА для государственных служащих и ст. 7 ч. 2 Закона «Об адвокатской деятельности» для частных адвокатов. Задержанный к ним не относится. Полномочия адвоката по ст. 3 того же закона не включают требование о вызове прокурора. Назовите норму, которая обязывает меня это сделать."],
+  ["«Разъясните нормы права»", "Согласно ст. 3.1 ч. 3 п. 2 Закона «Об адвокатской деятельности», разъяснение правовых норм и позиции по правовым вопросам не входит в мои обязанности. Статья и основание задержания озвучены."],
+  ["Адвокат мешает", "Согласно ст. 3 Закона «Об адвокатской деятельности», адвокату запрещено отвлекать сотрудников от исполнения служебных обязанностей и создавать помеху их деятельности. Прошу не препятствовать процессуальным действиям."],
+  ["«Основание задержания?»", "Задержание проведено в порядке ст. 17 ПК СА по основаниям ст. 16 ПК СА: лицо застигнуто на месте совершения преступления, ведётся видеозапись. Права разъяснены, сроки соблюдены."],
+  ["Адвокат не ответил / не приехал", "Адвокат не ответил в течение 5 минут (не прибыл в течение 10 минут). Право на адвоката считается реализованным, процессуальные действия продолжаются."],
+  ["Запрос видео", "Видеозапись задержания сохранена и будет предоставлена по официальному адвокатскому запросу (ст. 3 ч. 2 п. 1 Закона «Об адвокатской деятельности»)."]
+];
+$("answers").innerHTML = ANSWERS.map(([t, a], i) => `<div class="card"><h4>${t}</h4><p>${a}</p><button class="small" data-copy="${i}">📋 Копировать</button></div>`).join("");
+$("answers").addEventListener("click", (e) => { const b = e.target.closest("[data-copy]"); if (b) copy(ANSWERS[Number(b.dataset.copy)][1]); });
+
+/* ---------- ИИ: разговор ---------- */
+let history = [];
+function addMsg(role, text, err) {
+  const div = document.createElement("div");
+  div.className = `msg ${role}${err ? " err" : ""}`;
+  div.textContent = text;
+  if (role === "ai" && !err) {
+    const acts = document.createElement("div");
+    acts.className = "acts";
+    acts.innerHTML = `<button class="small">📋 Копировать</button><button class="small">🔊</button>`;
+    acts.children[0].onclick = () => copy(text);
+    acts.children[1].onclick = () => say(text);
+    div.appendChild(acts);
+  }
+  $("chat").appendChild(div);
+  div.scrollIntoView({ block: "end" });
+  return div;
+}
+function say(text) {
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text.replace(/[*#]/g, ""));
+    u.lang = "ru-RU";
+    const ru = speechSynthesis.getVoices().find((v) => /ru/i.test(v.lang));
+    if (ru) u.voice = ru;
+    speechSynthesis.speak(u);
+  } catch {}
+}
+async function send(text) {
+  const q = (text ?? $("q").value).trim();
+  if (!q) return;
+  $("q").value = "";
+  addMsg("me", q);
+  history.push({ role: "user", content: q });
+  const wait = addMsg("ai", "Думаю…");
+  $("bAsk").disabled = true;
+  // ИИ видит, что сейчас выбрано во вкладке «Статьи», и подставляет это в готовую фразу
+  // полный текст и наказание каждой выбранной статьи — чтобы ИИ точно знал, за что задержан человек
+  const now = [...picked.values()].map((a) => "- ст. " + a.key + " " + SHORT[a.code] + " «" + a.title + "»" + (a.full && a.full !== a.title ? ": " + a.full.replace(/\s+/g, " ") : "") + (a.pen ? " Наказание: " + a.pen : "")).join("\n");
+  const ctx = now || $("gov").checked
+    ? "[СЕЙЧАС У ИГРОКА: " + (now ? "я задерживаю человека по этим статьям:\n" + now : "статьи не выбраны") + ($("gov").checked ? "\nЗадержанный — госслужащий." : "") + "]\n"
+    : "";
+  const req = history.map((m, i) => (i === history.length - 1 && ctx ? { role: m.role, content: ctx + m.content } : m));
+  const res = await window.sa.ask(req);
+  $("bAsk").disabled = false;
+  wait.remove();
+  if (res.error) { history.pop(); addMsg("ai", res.error, true); return; }
+  history.push({ role: "assistant", content: res.text });
+  addMsg("ai", res.text);
+  const m = res.text.replace(/\*\*/g, "").match(/Ответ:\s*([\s\S]*?)(?:\n\s*(?:Тебе|Основание|Почему|Лазейк)[^\n]*:|$)/);
+  if (m) await copy(m[1].trim());
+  if ($("speak").checked) say(m ? m[1] : res.text);
+}
+$("bAsk").onclick = () => send();
+$("bNew").onclick = () => { history = []; $("chat").innerHTML = ""; speechSynthesis.cancel(); };
+$("q").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") window.sa.blur(); });
+
+/* ---------- настройки ---------- */
+async function loadSettings() {
+  const s = await window.sa.getSettings();
+  $("keyState").textContent = s.hasKey ? "Ключ сохранён ✓" : "Ключа нет — ИИ работать не будет.";
+  $("model").value = s.model;
+  $("opacity").value = s.opacity;
+  $("shell").style.opacity = s.opacity;
+  $("speak").checked = Boolean(s.speak);
+}
+$("opacity").oninput = () => { $("shell").style.opacity = $("opacity").value; };
+$("speak").onchange = () => window.sa.setSettings({ speak: $("speak").checked });
+$("bSave").onclick = async () => {
+  await window.sa.setSettings({ apiKey: $("key").value, model: $("model").value, opacity: Number($("opacity").value) });
+  $("key").value = "";
+  await loadSettings();
+  toast("Сохранено");
+};
+$("hide").onclick = () => window.sa.hide();
+$("quit").onclick = () => window.sa.quit();
+loadSettings();
+
+/* ---------- горячие клавиши ---------- */
+window.sa.onHotkey((a) => {
+  if (a === "timer") toggleTimer();
+  if (a === "lawyer") nextStage("law");
+  if (a === "prosecutor") nextStage("pros");
+  if (a === "arts") { showTab("arts"); $("search").select(); }
+  if (a === "ask") { showTab("ai"); $("q").focus(); }
+});
+renderTimer();
+</script>
+</body>
+</html>

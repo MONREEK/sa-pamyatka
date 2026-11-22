@@ -1,0 +1,36 @@
+Акты по неотложным судебным разбирательствам
+Источник: https://forum.gta5rp.com/threads/akty-po-neotlozhnym-sudebnym-razbiratel-stvam.3426942/
+
+{
+				"lightbox_close": "Закрыть",
+				"lightbox_next": "Следующее",
+				"lightbox_previous": "Предыдущее",
+				"lightbox_error": "Запрашиваемое содержимое не может быть загружено. Пожалуйста, попробуйте позже.",
+				"lightbox_start_slideshow": "Начать слайд-шоу",
+				"lightbox_stop_slideshow": "Остановить слайд-шоу",
+				"lightbox_full_screen": "Полный экран",
+				"lightbox_thumbnails": "Миниатюры",
+				"lightbox_download": "Скачать",
+				"lightbox_share": "Поделиться",
+				"lightbox_zoom": "Увеличить",
+				"lightbox_new_window": "Новое окно",
+				"lightbox_toggle_sidebar": "Скрыть боковую панель"
+			}
+			
+		
+		
+	
+
+	
+		
+	
+
+THE STATE OF SAN ANDREAS
+
+COURTS OF SAN ANDREAS
+
+______________________________________________________________________________________________________________
+
+В данной теме публикуются судебные акты, принятые в порядке неотложного судебного разбирательства
+
+______________________________________________________________________________________________________________

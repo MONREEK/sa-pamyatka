@@ -24,7 +24,7 @@ const MORE_SHORT = {
 const state = {
   mode: "memo",
   quiz: {
-    pick: { ak: true, dk: true, uk: true },
+    pick: { pk: true, ak: true, dk: true, uk: true },
     n: 10,
     items: [],
     i: 0,
@@ -134,7 +134,7 @@ function dockHtml() {
         <h1>${quiz ? "Тест" : "Памятки"}</h1>
         <div class="dock-actions">
           <button type="button" class="mode-btn" data-act="mode">${quiz ? "К статьям" : "Тест"}</button>
-          <p>${quiz ? "АК, ДК, УК" : "1–4 — кодекс, / — поиск"}</p>
+          <p>${quiz ? "ПК, АК, ДК, УК" : "1–4 — кодекс, / — поиск"}</p>
         </div>
       </div>
       ${quiz ? "" : `<nav class="codes">${SA.codes.map(renderTab).join("")}</nav>`}
@@ -929,7 +929,7 @@ function onAction(event) {
   if (act === "quizcode") {
     const id = button.dataset.code;
     const next = !state.quiz.pick[id];
-    const other = ["ak", "dk", "uk"].some((code) => code !== id && state.quiz.pick[code]);
+    const other = ["pk", "ak", "dk", "uk"].some((code) => code !== id && state.quiz.pick[code]);
     if (!next && !other) return;
     state.quiz.pick[id] = next;
     mount(true);
@@ -992,6 +992,7 @@ function startQuiz() {
     return {
       code: item.code,
       kind: item.kind,
+      ask: item.ask,
       q: item.q,
       why: item.why,
       options: order.map((index) => item.options[index]),
@@ -1008,7 +1009,7 @@ function startQuiz() {
 }
 
 function quizCodeName(id) {
-  return id === "ak" ? "АК" : id === "dk" ? "ДК" : "УК";
+  return id === "pk" ? "ПК" : id === "ak" ? "АК" : id === "dk" ? "ДК" : "УК";
 }
 
 function quizLetter(index) {
@@ -1019,7 +1020,7 @@ function renderQuiz() {
   if (state.quiz.phase === "ask") return renderQuizAsk();
   if (state.quiz.phase === "done") return renderQuizDone();
   const pool = quizPool();
-  const counts = { ak: 0, dk: 0, uk: 0 };
+  const counts = { pk: 0, ak: 0, dk: 0, uk: 0 };
   (window.SA_QUIZ || []).forEach((item) => {
     counts[item.code] += 1;
   });
@@ -1029,10 +1030,10 @@ function renderQuiz() {
       <header class="exam-hero">
         <p class="kicker">Тренировка</p>
         <h2>Какие статьи берём</h2>
-        <p>Два хода. Дан номер — выбери текст статьи. Дан текст — выбери номер. Сроков и штрафов в вопросах нет.</p>
+        <p>Без номеров статей. ПК — ситуации на задержании, остальные — что за это будет.</p>
       </header>
       <div class="exam-codes">
-        ${["ak", "dk", "uk"].map((id) => {
+        ${["pk", "ak", "dk", "uk"].map((id) => {
           const code = codeById(id);
           return `
             <button type="button" class="exam-code${state.quiz.pick[id] ? " on" : ""}" data-act="quizcode" data-code="${id}">
@@ -1078,8 +1079,8 @@ function renderQuizAsk() {
         <span>${state.quiz.i + 1} / ${total}</span>
       </div>
       <div class="exam-bar" aria-hidden="true"><i style="width:${progress}%"></i></div>
-      <p class="exam-ask">${item.kind === "text" ? "Текст статьи. Выбери номер." : "Номер статьи. Выбери текст."}</p>
-      <h2 class="exam-q${item.kind === "text" ? " long" : ""}">${esc(item.q)}</h2>
+      <p class="exam-ask">${esc(item.ask || "Выбери ответ")}</p>
+      <h2 class="exam-q${item.q.length > 60 ? " long" : ""}">${esc(item.q)}</h2>
       <div class="exam-opts">${options}</div>
       ${chosen == null ? "" : `
         <div class="exam-note${right ? " good" : " bad"}">
